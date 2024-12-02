@@ -24,7 +24,7 @@ for iVideo = 1 : length(videoFiles)
     mkdir(videoFolderDirectory);
 
     currentVideo = VideoReader(fullfile(videoFolder, videoFiles(iVideo).name));     % Extract the frames from the current video and save as .jpg.
-    videoFrames = read(currentVideo);
+    videoFrames = read(currentVideo, [100 1000]);
     nFrames = size(videoFrames, 4);
     framesToPull = round((nFrames - 1) .* rand(nFramesToExtract, 1) + 1);
     for iFrame = framesToPull'
@@ -44,31 +44,50 @@ for iVideo = 1 : length(videoFiles)
     currentImages = imageDatastore(fullfile(imageDirectory, currentVideoName));
 
     % Detect the checkerboard points in the images.
-    [imagePoints, boardSize] = detectCheckerboardPoints(currentImages.Files);
+    [imagePoints, boardSize, imagesUsed] = detectCheckerboardPoints(currentImages.Files);
     worldPoints = generateCheckerboardPoints(boardSize, squareSize);
 
     % Calibrate the camera.
-    currentImage = imread(currentImages.Files{1});  % Get the image size
-    imageSize = [size(currentImage, 1), size(currentImage, 2)];
-    [cameraParams, imagesUsed, estimationErrors] = estimateCameraParameters(imagePoints, worldPoints, 'ImageSize', imageSize);
-    cameraIntrinsics = cameraParams.Intrinsics;
+    goodImages = find(imagesUsed == 1);
+    imageIndex = 1;
+    x = 0;
+    while x == 0        
+        currentImage = imread(currentImages.Files{goodImages(imageIndex)});  % Get the image size
+        imageSize = [size(currentImage, 1), size(currentImage, 2)];
+        [cameraParams, ~, estimationErrors] = estimateCameraParameters(imagePoints, worldPoints, 'ImageSize', imageSize);
+        cameraIntrinsics = cameraParams.Intrinsics;
+    
+        % figure; 
+        % showExtrinsics(cameraParams, "CameraCentric");
+    
+        % Undistort a sample image.
+        [undistortedImage, newOrigin] = undistortImage(currentImage, cameraParams, OutputView = 'full');
+        % figure; 
+        % imshow(currentImage);
+        % hold on;
+        % plot(imagePoints(:,1,1), imagePoints(:,2,1), 'ro');
+        % title('Original Image');
+        % figure;
+        % imshow(undistortedImage)
+        % title('Undistorted Image');
+        % 
+         % Estimate extrinsic parameters of the camera.
+        [undistortedImagePoints, undistortedBoardSize, ~] = detectCheckerboardPoints(undistortedImage);
+        if size(undistortedImagePoints,1) > size(imagePoints, 1)    % The undistorted image detected more checkerboard points than it should, don't use this image.
+            x = 0;
+            imageIndex = imageIndex + 1;
+        else          
+            x = 1;
+        end
+        % figure;
+        % imshow(undistortedImage);
+        % hold on;
+        % plot(undistortedImagePoints(:,1,1), undistortedImagePoints(:,2,1), 'ro');
+    end
 
-    figure; 
-    showExtrinsics(cameraParams, "CameraCentric");
-
-    % Undistort a sample image.
-    [undistortedImage, newOrigin] = undistortImage(currentImage, cameraParams, OutputView = 'full');
-    % figure; 
-    % imshow(currentImage);
-    % title('Original Image');
-    % figure;
-    % imshow(undistortedImage)
-    % title('Undistorted Image');
-
-     % Estimate extrinsic parameters of the camera.
-    [imagePoints, boardSize] = detectCheckerboardPoints(undistortedImage);
-    imagePoints = imagePoints + newOrigin.PrincipalPoint;
-    dlcStructure(iVideo).cameraExtrinsics = estimateExtrinsics(imagePoints, worldPoints, cameraIntrinsics);
+    undistortedImagePoints = undistortedImagePoints + newOrigin.PrincipalPoint;
+    dlcStructure(iVideo).cameraExtrinsics = estimateExtrinsics(undistortedImagePoints, worldPoints, cameraIntrinsics);
+    dlcStructure(iVideo).cameraIntrinsics = cameraIntrinsics;
 
 end
 

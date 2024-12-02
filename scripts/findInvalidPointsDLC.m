@@ -25,7 +25,7 @@ function [invalidPoints, percentInvalidPoints] = findInvalidPointsDLC(partsLocat
     certainPoints = p > params.minCertainP; % Keep any points that are above the certainty p-value.
 
     % Pass 2 - Eliminate points outside the bounds of the chamber (to help with reflections that are incorrectly marked
-    outPoints = zeros(nBodyparts,nFrames);
+    outPoints = zeros(nBodyparts, nFrames);
     for iBodypart = 1 : nBodyparts
         outPoints(iBodypart,:) = ~inpolygon(squeeze(partsLocation(iBodypart,:,1)), squeeze(partsLocation(iBodypart,:,2)), corners(:,1), corners(:,2));
     end

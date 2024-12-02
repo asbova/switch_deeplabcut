@@ -1,4 +1,4 @@
-function plotTrajectoriesSwitch(trajectoryData)
+function plotTrajectoriesSwitch(trajectoryData, corners, frameRate)
 % 
 % INPUTS:
 %   trajectoryData:      Within trial smoothed trajectories for short and long trials from one session.
@@ -6,7 +6,13 @@ function plotTrajectoriesSwitch(trajectoryData)
 % OUTPUTS:
 %   figure
 
-    
+
+
+
+    c = [corners(1,1), 1; corners(2,1), 1] \ [corners(1,2); corners(2,2)];
+    boxAngle = atan2(c(1), 1);
+    rotationMatrix = [cos(-boxAngle), -sin(-boxAngle); sin(-boxAngle), cos(-boxAngle)];
+    rotatedCorners = rotationMatrix * [corners(:,1)'; corners(:,2)'];
 
     % Plot trajectories of short trials.
     figure('Units', 'Normalized', 'OuterPosition', [0.2, 0.9, 0.4, 0.7]);
@@ -14,21 +20,34 @@ function plotTrajectoriesSwitch(trajectoryData)
     hold on
     nTrials = length(trajectoryData.ShortTrials);    
     for iTrial = 1 : nTrials
-        if isempty(trajectoryData.ShortTrials{iTrial})
+        if isnan(trajectoryData.ShortTrials{iTrial})
             continue;
         end
 
-        xPositions = trajectoryData.ShortTrials{iTrial}(:,1);
-        yPositions = trajectoryData.ShortTrials{iTrial}(:,2);
+        if frameRate == 30
+            dataIndex = 121 : 660;
+        else
+            dataIndex = 241 : 600;
+        end
+
+        rotatedPositions = rotationMatrix * trajectoryData.ShortTrials{iTrial}';
+        xPositions = rotatedPositions(1,:)' - rotatedCorners(1,1);
+        yPositions = rotatedPositions(2,:)' - rotatedCorners(2,1);
+        xPositions = xPositions(dataIndex,1);
+        yPositions = yPositions(dataIndex,1);
+
+        % xPositions = trajectoryData.ShortTrials{iTrial}(:,1) - origin(1,1);
+        % yPositions = trajectoryData.ShortTrials{iTrial}(:,2) - origin(1,2);
         nPositions = size(xPositions,1);
         cmap = jet(nPositions);
     
         for i = 1 : nPositions - 1
             plot(xPositions([i i+1]), yPositions([i i+1]), 'color', cmap(i,:), 'linewidth', 1.5);
         end
+
     end
-    set(gca, 'xlim', [-20 220]);
-    set(gca, 'ylim', [-10 210]);
+    % set(gca, 'xlim', [-20 220]);
+    % set(gca, 'ylim', [-10 210]);
     title('Short Trials');
     hold off;
 
@@ -37,12 +56,24 @@ function plotTrajectoriesSwitch(trajectoryData)
     hold on
     nTrials = length(trajectoryData.LongTrials);    
     for iTrial = 1 : nTrials
-        if isempty(trajectoryData.LongTrials{iTrial})
+        if isnan(trajectoryData.LongTrials{iTrial})
             continue;
         end
 
-        xPositions = trajectoryData.LongTrials{iTrial}(:,1);
-        yPositions = trajectoryData.LongTrials{iTrial}(:,2);
+        if frameRate == 30
+            dataIndex = 121 : 660;
+        else
+            dataIndex = 241 : 1320;
+        end
+
+        rotatedPositions = rotationMatrix * trajectoryData.LongTrials{iTrial}';
+        xPositions = rotatedPositions(1,:)' - rotatedCorners(1,1);
+        yPositions = rotatedPositions(2,:)' - rotatedCorners(2,1);
+        xPositions = xPositions(dataIndex,1);
+        yPositions = yPositions(dataIndex,1);
+
+        % xPositions = trajectoryData.LongTrials{iTrial}(:,1) - originPoints(1,1);
+        % yPositions = trajectoryData.LongTrials{iTrial}(:,2) - originPoints(1,2);
         nPositions = size(xPositions,1);
         cmap = jet(nPositions);
     
@@ -50,8 +81,8 @@ function plotTrajectoriesSwitch(trajectoryData)
             plot(xPositions([i i+1]), yPositions([i i+1]), 'color', cmap(i,:), 'linewidth', 1.5);
         end
     end
-    set(gca, 'xlim', [-20 220]);
-    set(gca, 'ylim', [-10 210]);
+    % set(gca, 'xlim', [-20 220]);
+    % set(gca, 'ylim', [-10 210]);
     title('Long Trials')
 
     % % Make legend

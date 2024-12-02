@@ -51,5 +51,5 @@ function plotVelocityOptoAverages(dlcData)
     ylabel('Average Velocity (mm/s)')
     set(gca, 'FontSize', 14);
 
-    p = signrank(averageVelocity(:,1), averageVelocity(:,2));
+    [p, h, stats] = signrank(averageVelocity(:,1), averageVelocity(:,2));
     fprintf('\nSign Rank: Laser On vs. Laser Off Velocity: p = %.2f', p)

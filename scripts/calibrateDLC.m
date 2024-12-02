@@ -51,6 +51,8 @@ function newWorldPoints = calibrateDLC(calibrationImage, imagePoints, partsLocat
         newWorldPoints(iBodypart, :, :) = img2world2d(squeeze(partsLocation(iBodypart,:,:)), extrinsics, intrinsics);
     end
 
-
-
 end
+
+
+
+    
